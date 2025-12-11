@@ -348,6 +348,7 @@ def perfil():
         if foto and foto.filename:
             caminho_completo = os.path.join(app.config['UPLOAD_FOLDER'], nome_foto)
             foto.save(caminho_completo)
+            session['foto'] = nome_foto
             print(f"Foto salva em: {caminho_completo}")
         flash("Dados alterados com sucesso!")
     else:

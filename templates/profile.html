@@ -2,7 +2,7 @@
 {% block conteudo %}
 
 <div class="perfil">
-    <img src="{{ url_for('static', filename='uploads/foto_perfil.jpg') }}" class="foto-perfil" alt="Foto do perfil">
+    <img src="../static/uploads/{{ session['foto']}}" class="foto-perfil" alt="Foto do perfil">
     <h2>Olá, {{nome}}!</h2>
     <hr>
     <h3>Alterar dados: </h3>
