@@ -12,7 +12,7 @@
 
                     <!-- imagem pequena do perfil + inputs -->
                     <div class="post-input">
-                        <img src="{{ url_for('static', filename='uploads/foto_perfil.jpg') }}" 
+                        <img src="../static/uploads/{{ session['foto']}}" 
                              alt="Foto do usuário" class="foto-usuario">
                         <div style="flex:1">
                             <input type="text" name="title" placeholder="Título do Post" value="{{ post.title if post else ''}}" required maxlength="50">
