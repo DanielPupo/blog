@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+
+<div id="dashboard">
+    <div id="dados">
+        <p>Total de Posts: {{ total_posts[0] if total_posts else 0 }}</p>
+        <p>Total de Usuários: {{ total_usuarios[0] if total_usuarios else 0}}</p>
+    </div>
+    <div id="info">
+        <div class="col-info">
+            <h3>Usuários</h3>
+            <table>
+                <tr>
+                    <th>Ações</th>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>User</th>
+                    <th>Senha</th>
+                    <th>Data de Cadastro</th>
+                    <th>Status</th>
+                </tr>
+            {% for u in usuarios %}
+            <tr {% if u.ativo == 0 %} style="text-decoration: line-through;" {% endif %}>
+                <td class="col-acoes">
+                    <form action="/usuario/excluir/{{ u.idUser }}" method="POST" style="display:inline" onsubmit="return confirm('Confirma exclusão do usuário {{ u.user }}?');">
+                        <button type="submit" class="btn-delete">Excluir</button>
+                    </form>
+                </td>
+                <td>{{u.idUser}}</td>
+                <td>{{u.name}}</td>
+                <td>{{u.user}}</td>
+                <td><a href="/usuario/reset/{{ u.idUser }}">
+                    <button>Resetar senha</button></a>
+                </td>
+                <td>{{u.registrationDate.strftime("%d/%m/%y")}}</td>
+                <td>
+                    <a href="/usuario/status/{{u.idUser}}">
+                    <button>{{ "Banir" if u.ativo else "Reativar" }}</button></a>
+                </td>
+            </tr>
+            {% else %}
+                <tr>
+                    <td colspan="7">Nenhum usuário cadastrado!</td>
+                </tr>
+            {%endfor%}
+            </table>
+        </div>
+         <div class="col-info">
+            <h3>Posts</h3>
+            {% for p in posts %}
+                <p><a href="/excluirpost/{{p.idPost}}" onclick="return confirm('Confirma a exclusão:')"><button>| ❌ |</button></a>
+                    - {{ p.idPost }} - {{ p.title }} - {{ p.content | truncate(30)}}</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pupo's Blog</title>
+    <link rel="stylesheet" href="../static/style.css">
+    <link rel="icon" href="../static/img/10045917.png"
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="../static/img/10045917.png">
+            <h1>Pupo's Blog</h1>
+        </div>
+       <nav>
+        {% if 'user' in session or 'admin' in session%}
+            {% if 'admin' in session %} 
+                <a href="/"><button>Home</button></a>
+                <a href="/dashboard"><button>Dashboard</button></a>
+            {% endif %}
+            <a href="/perfil"><button>Profile</button></a>
+            <a href="/logout"><button>Logout</button></a>
+        {% else %}
+            <a href="/login"><button>Login</button></a>
+        {% endif %}
+        </nav>
+    </header>
+    <main>
+        {% block conteudo %}{% endblock %}
+    </main>
+    <footer>
+        <p>Pupo Blog's - Feito com Flask</p>
+    </footer>
+</body>
+</html>

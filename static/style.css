@@ -1,0 +1,953 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap');
+
+/* =========================
+   Variáveis e reset
+   ========================= */
+:root {
+    --bg-page: #0b0f14;
+    --bg-panel: #0f1720;
+    --bg-card: #0d1320;
+    --accent: #16a34a;
+    --accent-strong: #059669;
+    --muted: #94a3b8;
+    --text: #e6eef6;
+    --border: rgba(255,255,255,0.06);
+    --shadow: 0 8px 30px rgba(2,6,23,0.7);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    min-height: 100vh;
+    font-family: 'Montserrat', sans-serif;
+    background-color: var(--bg-page);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+}
+
+/* =========================
+   Header
+   ========================= */
+header {
+    height: 12vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(90deg, rgba(6,10,15,1), rgba(14,20,28,1));
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+    position: relative;
+    z-index: 20;
+}
+
+header .logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-weight: 900;
+    font-size: 1.8rem;
+    color: var(--text);
+}
+
+header .logo img {
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    object-fit: cover;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+}
+
+header nav {
+    position: absolute;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+header nav a button {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.06);
+    color: var(--text);
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .16s;
+}
+
+header nav a button:hover {
+    background: rgba(22,163,74,0.08);
+    transform: translateY(-2px);
+}
+
+/* =========================
+   Layout (colunas / main)
+   ========================= */
+main {
+    flex: 1;
+    padding-bottom: 6vh;
+    background: var(--bg-page);
+}
+
+.start {
+    display: flex;
+    justify-content: center;
+}
+
+.col-left, .col-right {
+    width: 20%;
+    background: linear-gradient(180deg, rgba(7,10,14,0.9), rgba(10,13,18,0.9));
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+}
+
+.col-centro {
+    width: 60%;
+    padding: 26px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* =========================
+   Form de posts / inputs
+   ========================= */
+.form-post {
+    width: 94%;
+    border-radius: 12px;
+    margin: 18px 0;
+    padding: 18px;
+    background: linear-gradient(180deg, rgba(16,22,28,0.9), rgba(12,16,20,0.85));
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+}
+
+.form-post form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.form-post input, .form-post textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.04);
+    background: rgba(255,255,255,0.02);
+    color: var(--text);
+    font-weight: 600;
+}
+
+.form-post textarea {
+    min-height: 120px;
+    resize: none;
+}
+
+.form-post input::placeholder, .form-post textarea::placeholder {
+    color: rgba(210,220,230,0.22);
+}
+
+/* botão principal */
+.form-post form button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+    color: #021012;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform .12s, box-shadow .18s;
+    box-shadow: 0 8px 24px rgba(2,6,23,0.6);
+}
+
+.form-post form button:hover {
+    transform: translateY(-3px);
+}
+
+/* mensagem de feedback */
+.form-post .mensagem {
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(22,163,74,0.14);
+    color: var(--text);
+    font-weight: 700;
+    text-align: center;
+    border: 1px solid rgba(22,163,74,0.24);
+}
+
+/* =========================
+   Feed e posts
+   ========================= */
+.feed {
+    width: 94%;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    align-items: center;
+    padding-bottom: 40px;
+}
+
+.feed .post {
+    width: 100%;
+    padding: 16px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(10,14,18,0.9), rgba(14,18,22,0.95));
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.6);
+    transition: transform .22s, box-shadow .22s;
+}
+
+.feed .post:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.7);
+}
+
+.post-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.02);
+    margin-bottom: 10px;
+}
+
+.post-header img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid rgba(255,255,255,0.03);
+}
+
+.post-header strong {
+    color: var(--accent);
+    font-weight: 900;
+}
+
+.post-content h2 {
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--text);
+    margin: 0 0 8px 0;
+}
+
+.post-content p {
+    color: rgba(230,238,246,0.9);
+    line-height: 1.6;
+}
+
+/* botões do post */
+.post-button {
+    margin-top: 8px;
+    display: flex;
+    gap: 12px;
+}
+
+.post-button a {
+    color: var(--muted);
+    text-decoration: none;
+    font-weight: 700;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.02);
+}
+
+.post-button a:hover {
+    color: #021012;
+    background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+}
+
+/* =========================
+   Auth (login / cadastro)
+   ========================= */
+.auth-container {
+    width: 100%;
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, rgba(10,14,18,0.95), rgba(14,18,22,0.95));
+}
+
+.auth-card {
+    width: 420px;
+    max-width: 94%;
+    padding: 38px 26px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(15,20,28,0.9), rgba(12,16,20,0.9));
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    align-items: center;
+}
+
+.auth-card h2 {
+    color: var(--accent);
+    font-weight: 900;
+    margin: 0;
+}
+
+.auth-card input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.04);
+    background: rgba(255,255,255,0.02);
+    color: var(--text);
+    font-weight: 600;
+}
+
+.auth-card input:focus {
+    outline: none;
+    box-shadow: 0 6px 22px rgba(22,163,74,0.08);
+    border-color: rgba(22,163,74,0.5);
+}
+
+.auth-card button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+    color: #021012;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+/* link e texto auxiliar */
+.auth-card p {
+    color: var(--muted);
+    font-size: .9rem;
+    text-align: center;
+}
+
+.auth-card p a {
+    color: var(--accent);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+/* =========================
+   Footer
+   ========================= */
+footer {
+    height: 8vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(90deg, rgba(8,10,12,0.95), rgba(12,16,20,0.95));
+    color: var(--muted);
+    font-weight: 700;
+    border-top: 1px solid rgba(255,255,255,0.02);
+}
+
+/* =========================
+   Dashboard (limpo e responsivo)
+   ========================= */
+#dashboard {
+    width: 100%;
+    padding: 22px 0 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    align-items: center;
+}
+
+#dashboard #dados {
+    width: 94%;
+    padding: 18px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+}
+
+#dashboard #dados h3 {
+    margin: 0 0 12px 0;
+    color: var(--accent);
+    font-weight: 900;
+}
+
+#dashboard #dados p {
+    color: var(--muted);
+    margin: 6px 0;
+    font-weight: 600;
+}
+
+#dashboard #info {
+    width: 94%;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 18px;
+}
+
+#dashboard .col-info {
+    padding: 16px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.008));
+    border: 1px solid rgba(255,255,255,0.02);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+    display: flex;
+    flex-direction: column;
+    max-height: 500px;
+}
+
+#dashboard .col-info h3 {
+    margin: 0 0 12px 0;
+    padding-bottom: 12px;
+    border-bottom: 2px solid rgba(22,163,74,0.3);
+    color: var(--accent);
+    font-weight: 900;
+}
+
+/* =========================
+   Tabelas Dashboard (corrigido - layout clássico)
+   ========================= */
+
+.table-wrap {
+    width: 100%;
+    max-height: 360px;
+    overflow: auto;
+    border-radius: 8px;
+    background: transparent;
+}
+
+/* tabela em display:table para alinhar colunas corretamente */
+.table-dashboard {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed; /* essencial para alinhamento */
+    min-width: 700px;    /* evita colapsar demais; ajuste se precisar */
+    background: transparent;
+}
+
+/* cabeçalho sticky */
+.table-dashboard thead th {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    padding: 12px 14px;
+    text-align: left;
+    font-weight: 800;
+    color: var(--accent);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    background: linear-gradient(90deg, rgba(22,163,74,0.06), rgba(22,163,74,0.02));
+    white-space: nowrap;
+}
+
+/* larguras de coluna (ajustáveis) */
+.table-dashboard thead th:nth-child(1) { width: 10%; }   /* Ações */
+.table-dashboard thead th:nth-child(2) { width: 6%; }    /* ID */
+.table-dashboard thead th:nth-child(3) { width: 26%; }   /* Nome */
+.table-dashboard thead th:nth-child(4) { width: 22%; }   /* User */
+.table-dashboard thead th:nth-child(5) { width: 20%; }   /* Data */
+.table-dashboard thead th:nth-child(6) { width: 16%; }   /* Status */
+
+/* corpo com scroll interno: tbody como bloco, linhas como tabela para manter colunas alinhadas */
+.table-dashboard tbody {
+    display: block;
+    overflow-y: auto;
+    max-height: 360px;
+    width: 100%;
+}
+
+.table-dashboard thead tr,
+.table-dashboard tbody tr {
+    display: table;
+    table-layout: fixed;
+    width: 100%;
+}
+
+/* células */
+.table-dashboard td {
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 0.95rem;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* zebra e hover */
+.table-dashboard tbody tr:nth-child(odd) {
+    background: rgba(255,255,255,0.01);
+}
+.table-dashboard tbody tr:hover {
+    background: linear-gradient(90deg, rgba(22,163,74,0.04), rgba(22,163,74,0.02));
+}
+
+/* ações e botões */
+.col-acoes { display:flex; gap:8px; align-items:center; }
+.btn-edit, .btn-delete, .btn-reset {
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 10px;
+    border-radius:999px;
+    font-weight:700;
+    font-size:0.85rem;
+    text-decoration:none;
+    border: 1px solid rgba(255,255,255,0.04);
+    cursor: pointer;
+    transition: transform .12s, box-shadow .12s;
+}
+.btn-edit { background: rgba(22,163,74,0.08); color: var(--accent); }
+.btn-delete { background: rgba(255,107,107,0.08); color: #ff6b6b; }
+.btn-reset { background: rgba(255,255,255,0.03); color: var(--muted); padding:6px 8px; }
+
+/* status */
+.status-badge { padding:6px 10px; border-radius:8px; font-weight:800; font-size:0.85rem; white-space:nowrap; }
+.status-badge.active { background: rgba(74,222,128,0.12); color: #4ade80; }
+.status-badge.inactive { background: rgba(255,107,107,0.12); color: #ff6b6b; }
+
+/* scrollbar do tbody (Webkit) */
+.table-dashboard tbody::-webkit-scrollbar { width:10px; }
+.table-dashboard tbody::-webkit-scrollbar-track { background: rgba(0,0,0,0.12); border-radius:8px; }
+.table-dashboard tbody::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+    border-radius:8px;
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,0.2);
+}
+
+/* responsividade: ocultar colunas menos importantes em mobile */
+@media (max-width:900px){
+    .table-dashboard thead th:nth-child(1),
+    .table-dashboard thead th:nth-child(5) { display:none; }
+    .table-dashboard td:nth-child(1),
+    .table-dashboard td:nth-child(5) { display:none; }
+    .table-dashboard tbody { max-height: 260px; }
+}
+
+/* =========================
+   Página: nova_senha.html
+   ========================= */
+.nova-senha-container {
+    width: 100%;
+    min-height: calc(100vh - 20vh);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    background: var(--bg-page);
+}
+
+.nova-senha-card {
+    width: 420px;
+    max-width: 94%;
+    padding: 28px 24px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(15,20,28,0.95), rgba(12,16,20,0.9));
+    border: 1px solid rgba(255,255,255,0.04);
+    box-shadow: 0 10px 30px rgba(2,6,23,0.7);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* título e instruções */
+.nova-senha-card h2 {
+    margin: 0;
+    font-size: 1.4rem;
+    color: var(--accent);
+    font-weight: 900;
+    text-align: center;
+}
+.nova-senha-card p {
+    margin: 0;
+    color: var(--muted);
+    font-weight: 600;
+    text-align: center;
+}
+
+/* formulário */
+.nova-senha-card form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 6px;
+}
+
+.nova-senha-card label {
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.nova-senha-card input[type="password"],
+.nova-senha-card input[type="text"],
+.nova-senha-card input[type="email"] {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.04);
+    background: rgba(255,255,255,0.02);
+    color: var(--text);
+    font-weight: 700;
+}
+
+.nova-senha-card input::placeholder {
+    color: rgba(210,220,230,0.22);
+}
+
+/* botão principal */
+.nova-senha-card button {
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+    color: #021012;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(2,6,23,0.6);
+    transition: transform .12s, box-shadow .12s;
+}
+.nova-senha-card button:hover {
+    transform: translateY(-3px);
+}
+
+/* mensagens (erro / sucesso) */
+.nova-senha-card .msg {
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-weight: 800;
+    text-align: center;
+}
+.nova-senha-card .msg.error {
+    background: rgba(255,107,107,0.12);
+    color: #ff6b6b;
+    border: 1px solid rgba(255,107,107,0.18);
+}
+.nova-senha-card .msg.success {
+    background: rgba(74,222,128,0.12);
+    color: #4ade80;
+    border: 1px solid rgba(74,222,128,0.18);
+}
+
+/* responsivo */
+@media (max-width: 540px) {
+    .nova-senha-card { padding: 20px; }
+    .nova-senha-card h2 { font-size: 1.2rem; }
+}
+
+/* =========================
+   Página: Perfil do usuário
+   ========================= */
+.perfil {
+    width: 94%;
+    max-width: 980px;
+    margin: 28px auto;
+    padding: 22px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(12,16,20,0.95), rgba(10,14,18,0.95));
+    border: 1px solid rgba(255,255,255,0.03);
+    box-shadow: 0 10px 30px rgba(2,6,23,0.7);
+    color: var(--text);
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+/* foto do perfil */
+.foto-perfil {
+    width: 160px;
+    height: 160px;
+    border-radius: 14px;
+    object-fit: cover;
+    border: 2px solid rgba(255,255,255,0.04);
+    box-shadow: 0 8px 26px rgba(0,0,0,0.6);
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+}
+
+/* título e separador */
+.perfil h2 {
+    margin: 0 0 6px 0;
+    font-size: 1.6rem;
+    color: var(--accent);
+    font-weight: 900;
+}
+
+.perfil hr {
+    grid-column: 1 / -1;
+    height: 1px;
+    border: none;
+    background: linear-gradient(90deg, rgba(22,163,74,0.14), rgba(255,255,255,0.02));
+    margin: 8px 0 16px 0;
+    border-radius: 2px;
+}
+
+/* formulário */
+.perfil form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+.perfil label {
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+}
+
+.perfil input[type="text"],
+.perfil input[type="email"],
+.perfil input[type="password"],
+.perfil input[type="file"] {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.04);
+    background: rgba(255,255,255,0.02);
+    color: var(--text);
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+/* file input visual melhorada */
+.perfil input[type="file"] {
+    padding: 8px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.018);
+}
+
+/* botões */
+.perfil .acoes {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* aparência base igual ao restante do site */
+.perfil .acoes .btn-primary,
+.perfil .acoes button.btn-primary {
+    background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+    color: #021012;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-weight: 900;
+    box-shadow: 0 10px 30px rgba(5,100,50,0.12);
+    border: none;
+    cursor: pointer;
+    transition: transform .16s cubic-bezier(.2,.9,.3,1), box-shadow .16s ease, filter .12s;
+}
+
+/* botões secundários (links ou buttons) */
+.perfil .acoes .btn-secondary,
+.perfil .acoes a.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid rgba(255,255,255,0.04);
+    font-weight: 800;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform .14s ease, box-shadow .14s ease, color .12s;
+}
+
+/* hover: apenas trocar tom de verde (sem escurecer para preto) */
+.perfil .acoes .btn-primary:hover,
+.perfil .acoes button.btn-primary:hover {
+    transform: translateY(-4px);
+    background: linear-gradient(90deg, #34d399, var(--accent-strong));
+    box-shadow: 0 20px 48px rgba(6,120,60,0.16);
+}
+
+.perfil .acoes .btn-secondary:hover,
+.perfil .acoes a.btn-secondary:hover {
+    transform: translateY(-3px);
+    background: rgba(22,163,74,0.06);
+    color: var(--accent);
+    border-color: rgba(22,163,74,0.18);
+}
+
+/* foco acessível */
+.perfil .acoes .btn-primary:focus,
+.perfil .acoes .btn-secondary:focus,
+.perfil .acoes a.btn-secondary:focus {
+    outline: 3px solid rgba(34,211,153,0.14);
+    outline-offset: 3px;
+}
+
+/* versão mobile: ocupa largura total quando necessário */
+@media (max-width:540px){
+    .perfil .acoes { justify-content: center; }
+    .perfil .acoes .btn-primary,
+    .perfil .acoes .btn-secondary,
+    .perfil .acoes a.btn-secondary {
+        width: 100%;
+        padding: 12px 16px;
+    }
+}
+
+/* =========================
+   Botões: padronização e efeitos
+   ========================= */
+
+/* estilo base para todos os botões/controles clicáveis */
+button,
+input[type="submit"],
+input[type="button"],
+.auth-card button,
+.form-post form button,
+.post-button a,
+header nav a button,
+.btn-primary,
+.btn-edit,
+.btn-reset,
+.table-dashboard .btn-edit,
+.table-dashboard .btn-reset {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    font-weight: 800;
+    color: #021012;
+    background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+    box-shadow: 0 10px 30px rgba(5,100,50,0.12);
+    transition: transform .16s cubic-bezier(.2,.9,.3,1), box-shadow .16s ease, filter .12s ease;
+    text-decoration: none;
+}
+
+/* Hover/focus: usar tom de verde (não escurecer para preto) */
+button:hover,
+input[type="submit"]:hover,
+.auth-card button:hover,
+.form-post form button:hover,
+.post-button a:hover,
+header nav a button:hover,
+.btn-primary:hover,
+.btn-edit:hover,
+.btn-reset:hover,
+.table-dashboard .btn-edit:hover,
+.table-dashboard .btn-reset:hover {
+    transform: translateY(-4px);
+    /* tom de verde mais claro/ vibrante no hover */
+    background: linear-gradient(90deg, #34d399, var(--accent-strong));
+    box-shadow: 0 20px 48px rgba(6,120,60,0.16);
+    /* remover filter/brightness que escurecia em alguns navegadores */
+    filter: none;
+}
+
+/* foco com contorno verde suave (visível, sem escurecer fundo) */
+button:focus,
+input[type="submit"]:focus,
+.auth-card button:focus,
+.form-post form button:focus {
+    outline: 3px solid rgba(34,211,153,0.18); /* verde suave */
+    outline-offset: 2px;
+    box-shadow: 0 10px 30px rgba(6,120,60,0.12);
+}
+
+/* botões secundários (bordas transparentes) */
+.btn-secondary,
+.perfil .btn-secondary,
+.post-button a {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid rgba(255,255,255,0.04);
+}
+
+.btn-secondary:hover,
+.perfil .btn-secondary:hover {
+    background: rgba(22,163,74,0.06);
+    color: var(--accent);
+    border-color: rgba(22,163,74,0.18);
+}
+
+/* manter botão excluir visualmente distinto (vermelho) */
+.btn-delete,
+.table-dashboard .btn-delete {
+    background: linear-gradient(90deg, #ff9a9a, #ff6b6b);
+    color: #021012;
+    box-shadow: 0 10px 30px rgba(255,80,80,0.08);
+    border: none;
+    transition: transform .14s, box-shadow .14s, filter .12s;
+}
+.btn-delete:hover,
+.table-dashboard .btn-delete:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 44px rgba(0,0,0,0.5);
+    filter: brightness(1.02);
+}
+
+/* pequenos ajustes para links que usamos como botões */
+a.button-like {
+    display:inline-flex;
+    align-items:center;
+    gap:.5rem;
+}
+
+/* responsividade: reduzir padding em telas pequenas */
+@media (max-width:540px){
+    button,
+    input[type="submit"],
+    .auth-card button,
+    .form-post form button {
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        border-radius: 10px;
+    }
+}
+
+/* pequena imagem de perfil antes do post */
+.post-input {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+/* avatar pequeno */
+.foto-usuario {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255,255,255,0.04);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.55);
+    margin-top: 6px;
+    flex-shrink: 0;
+}
+
+/* ajusta inputs quando ao lado da imagem */
+.post-input input[type="text"],
+.post-input textarea {
+    width: 100%;
+}
+
+/* responsivo: empilha em telas pequenas */
+@media (max-width: 760px) {
+    .post-input {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .foto-usuario {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 6px auto;
+    }
+}

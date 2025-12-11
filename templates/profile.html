@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+
+<div class="perfil">
+    <img src="{{ url_for('static', filename='uploads/foto_perfil.jpg') }}" class="foto-perfil" alt="Foto do perfil">
+    <h2>Olá, {{nome}}!</h2>
+    <hr>
+    <h3>Alterar dados: </h3>
+
+    <form action="/perfil" method="POST" enctype="multipart/form-data">
+        <label>Nome do usuário:</label>
+        <input type="text" name="name" value="{{nome}}" required>
+        <label>User:</label>
+        <input type="text" name="user" value="{{user}}" required>
+        <label></label>
+        <input type="file" name="foto" accept=".jpg .png .webp">
+
+        <div class="acoes">
+            <a href="/usuario/novasenha" class="btn-secondary">Alterar senha</a>
+            <button type="submit" class="btn-primary">Salvar alterações</button>
+            <a href="/" class="btn-secondary">Voltar aos posts</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

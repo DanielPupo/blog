@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+
+    <div class="start">
+        <div class="col-left"></div>
+
+        <div class="col-centro">
+            {% if 'user' in session %}
+            <div class="form-post">
+                <form action="{{ '/editarpost/' + post.idPost|string if post else '/novopost' }}" method="POST">
+                    <p>Olá, {{session['user']}}! O que gostaria de postar hoje?</p>
+
+                    <!-- imagem pequena do perfil + inputs -->
+                    <div class="post-input">
+                        <img src="{{ url_for('static', filename='uploads/foto_perfil.jpg') }}" 
+                             alt="Foto do usuário" class="foto-usuario">
+                        <div style="flex:1">
+                            <input type="text" name="title" placeholder="Título do Post" value="{{ post.title if post else ''}}" required maxlength="50">
+                            <textarea name="content" placeholder="Escreva aqui..." required>{{ post.content if post else ''}}</textarea>
+                            <button type="submit">{{ 'Salvar' if post else 'Postar' }}</button>
+                        </div>
+                    </div>
+
+                {%  with msg = get_flashed_messages()|first %}
+                    {% if msg %}
+                    <p class="mensagem">{{ msg }}</p>
+                    {% endif %}
+                {% endwith %}
+                </form>
+            </div>
+            {% endif %}
+
+            <div class="feed">
+                {% if not posts %}
+                    <p>Ainda não temos posts! Volte mais tarde!👋</p>
+                    <p>Ou seja o primeiro a comentar!</p>
+                {% else %}
+                    {% for post in posts %}
+                        <div class="post">
+                            <div class="post-header" style="display: flex; align-items: center; gap: 10px;">
+                                <img src="../static/uploads/{{ post.picture }}" alt="Usuário" style="width:32px; height:32px; border-radius:50%;">
+                                <p><strong>{{post.user}}</strong> disse:</p>
+                                <p style="margin-left:auto; font-size:0.9em;">{{ post.datePost.strftime("%d/%m/%y às %H:%M") }}</p>
+                            </div>
+                            <div class="post-content">
+                                <h2>{{post.title}}</h2>
+                                <p>{{post.content}}</p>
+                            </div>
+                            {% if post.idUser == session.get('idUser') or 'admin' in session%}
+                            <div class="post-button">
+                                {% if 'user' in session %}
+                                <a href="/editarpost/{{ post.idPost }}">Editar</a>
+                                {% endif %}
+                                <a href="/excluirpost/{{ post.idPost }}" onclick="return confirm('Confirma a exclusão?')">Excluir</a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+        </div>
+
+        <div class="col-right"></div>
+    </div>
+
+{% endblock %}
