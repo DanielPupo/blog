@@ -21,7 +21,7 @@ Prioridades encontradas:
 
 **Por que:** facilita separar desenvolvimento, preview e produção e evita segredos no Git.
 
-**Como personalizar:** altere apenas os valores no ambiente. Para trocar a conta admin, gere outro `ADMIN_PASSWORD_HASH`; nunca salve a senha em texto puro.
+**Como personalizar:** `ANONYMOUS_MODE=true` e `DATABASE_ENABLED=false` publicam uma versão segura somente para leitura, sem MySQL. Para reativar contas, use um banco externo, inverta essas duas opções e gere um `ADMIN_PASSWORD_HASH`; nunca salve a senha em texto puro.
 
 ### `app.py`
 
@@ -106,6 +106,6 @@ Para evoluir, adicione uma imagem Open Graph 1200×630 estática e monitore dado
 3. Configurar as variáveis da Vercel para Production e Preview.
 4. Conectar o repositório e branch corretos; confirmar que Root Directory aponta para a pasta contendo `app.py`.
 5. Fazer deploy e testar `/healthz`.
-6. Validar cadastro, login, publicação, edição, exclusão e painel.
+6. No modo visitante, validar navegação, `/healthz` e ausência dos formulários de senha. Com banco habilitado, validar também cadastro, login, publicação, edição, exclusão e painel.
 7. Conectar armazenamento externo antes de liberar upload de avatar.
 8. Atualizar o domínio do README e enviar `sitemap.xml` ao Google Search Console.

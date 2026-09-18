@@ -18,7 +18,14 @@ POST = {
 
 class BlogRoutesTest(unittest.TestCase):
     def setUp(self):
-        blog.app.config.update(TESTING=True, SECRET_KEY="test-secret", SESSION_COOKIE_SECURE=False)
+        blog.app.config.update(
+            TESTING=True,
+            SECRET_KEY="test-secret",
+            SESSION_COOKIE_SECURE=False,
+            ANONYMOUS_MODE=True,
+            DATABASE_ENABLED=False,
+            AUTH_ENABLED=False,
+        )
         self.client = blog.app.test_client()
         self.posts_patch = patch.object(blog.db, "listar_posts", return_value=[POST])
         self.post_patch = patch.object(
@@ -56,7 +63,50 @@ class BlogRoutesTest(unittest.TestCase):
     def test_healthcheck_does_not_touch_database(self):
         response = self.client.get("/healthz")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json(), {"status": "ok"})
+        self.assertEqual(
+            response.get_json(),
+            {"status": "ok", "mode": "anonymous", "database": "disabled"},
+        )
+
+    def test_login_offers_anonymous_access(self):
+        response = self.client.get("/login")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Continuar como visitante".encode(), response.data)
+        self.assertNotIn(b'name="password"', response.data)
+
+    def test_login_form_is_preserved_when_authentication_is_enabled(self):
+        blog.app.config.update(ANONYMOUS_MODE=False, DATABASE_ENABLED=True, AUTH_ENABLED=True)
+        response = self.client.get("/login")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'name="password"', response.data)
+        self.assertNotIn("Continuar como visitante".encode(), response.data)
+
+    def test_signup_is_disabled_in_anonymous_mode(self):
+        response = self.client.get("/sign-up")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.location, "/")
+
+    def test_anonymous_login_does_not_query_database(self):
+        with self.client.session_transaction() as current_session:
+            current_session["_csrf_token"] = "valid-test-token"
+        with patch.object(blog.db, "verificar_usuario") as verify:
+            response = self.client.post(
+                "/login",
+                data={"csrf_token": "valid-test-token", "user": "x", "password": "y"},
+            )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.location, "/")
+        verify.assert_not_called()
+
+    def test_database_layer_skips_connection_when_disabled(self):
+        self.post_patch.stop()
+        with (
+            patch.object(blog.db.Config, "DATABASE_ENABLED", False),
+            patch.object(blog.db.mysql.connector, "connect") as connect,
+        ):
+            self.assertIsNone(blog.db.obter_post(1))
+            self.assertEqual(blog.db.listar_usuarios(), [])
+        connect.assert_not_called()
 
 
 if __name__ == "__main__":

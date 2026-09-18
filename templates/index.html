@@ -6,6 +6,13 @@
   <p class="hero-copy">Anotações de campo sobre código, decisões de produto e tudo que existe entre uma ideia e algo útil no mundo.</p>
 </section>
 
+{% if anonymous_mode %}
+<aside class="mode-banner shell" aria-label="Modo visitante">
+  <strong>Modo visitante</strong>
+  <p>Você pode navegar sem conta. Cadastro, login e publicação ficam desativados enquanto o banco externo não estiver conectado.</p>
+</aside>
+{% endif %}
+
 {% if session.get('user') %}
 <section class="shell composer" aria-labelledby="composer-title">
   <div class="section-heading">
@@ -69,7 +76,11 @@
     <div class="empty-state">
       <p class="eyebrow">PÁGINA EM BRANCO, POR ENQUANTO</p>
       <h3>A primeira boa história começa com uma linha.</h3>
-      <p>Entre na sua conta e publique o primeiro texto do blog.</p>
+      {% if anonymous_mode %}
+        <p>O blog já está online para visitantes. As publicações aparecerão aqui quando o banco de dados for conectado.</p>
+      {% else %}
+        <p>Entre na sua conta e publique o primeiro texto do blog.</p>
+      {% endif %}
     </div>
   {% endif %}
 </section>

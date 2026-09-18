@@ -2,19 +2,34 @@
 {% block conteudo %}
 <section class="auth-layout shell">
   <div class="auth-intro">
-    <p class="eyebrow">BEM-VINDO DE VOLTA</p>
-    <h1>Continue a conversa.</h1>
-    <p>Entre para publicar, editar seus textos e manter seu perfil.</p>
+    {% if anonymous_mode %}
+      <p class="eyebrow">LEITURA SEM BARREIRAS</p>
+      <h1>Entre sem entrar.</h1>
+      <p>Explore o blog livremente, sem cadastro e sem compartilhar dados pessoais.</p>
+    {% else %}
+      <p class="eyebrow">BEM-VINDO DE VOLTA</p>
+      <h1>Continue a conversa.</h1>
+      <p>Entre para publicar, editar seus textos e manter seu perfil.</p>
+    {% endif %}
   </div>
-  <form class="auth-card" action="{{ url_for('login') }}" method="post">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <h2>Entrar</h2>
-    <label for="user">Usuário</label>
-    <input id="user" type="text" name="user" maxlength="15" autocomplete="username" required autofocus>
-    <label for="password">Senha</label>
-    <input id="password" type="password" name="password" autocomplete="current-password" required>
-    <button class="button button-primary" type="submit">Entrar</button>
-    <p>Ainda não tem conta? <a href="{{ url_for('cadastro') }}">Criar conta</a></p>
-  </form>
+  {% if anonymous_mode %}
+    <div class="auth-card">
+      <p class="eyebrow">ACESSO PÚBLICO</p>
+      <h2>Nenhuma conta é necessária.</h2>
+      <p>O blog está em modo de leitura. Você pode acessar o conteúdo sem informar usuário, senha ou dados pessoais.</p>
+      <a class="button button-primary" href="{{ url_for('index') }}">Continuar como visitante</a>
+    </div>
+  {% else %}
+    <form class="auth-card" action="{{ url_for('login') }}" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <h2>Entrar</h2>
+      <label for="user">Usuário</label>
+      <input id="user" type="text" name="user" maxlength="15" autocomplete="username" required autofocus>
+      <label for="password">Senha</label>
+      <input id="password" type="password" name="password" autocomplete="current-password" required>
+      <button class="button button-primary" type="submit">Entrar</button>
+      <p>Ainda não tem conta? <a href="{{ url_for('cadastro') }}">Criar conta</a></p>
+    </form>
+  {% endif %}
 </section>
 {% endblock %}

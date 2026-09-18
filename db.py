@@ -11,6 +11,8 @@ from settings import Config
 
 
 def conectar():
+    if not Config.DATABASE_ENABLED:
+        raise RuntimeError("O banco de dados está desativado neste ambiente.")
     return mysql.connector.connect(
         host=Config.DB_HOST,
         port=Config.DB_PORT,
@@ -27,6 +29,8 @@ def _log_database_error(action: str, error: Exception) -> None:
 
 
 def listar_posts():
+    if not Config.DATABASE_ENABLED:
+        return []
     try:
         with conectar() as connection:
             cursor = connection.cursor(dictionary=True)
@@ -45,6 +49,8 @@ def listar_posts():
 
 
 def obter_post(post_id: int):
+    if not Config.DATABASE_ENABLED:
+        return None
     try:
         with conectar() as connection:
             cursor = connection.cursor(dictionary=True)
@@ -63,6 +69,8 @@ def obter_post(post_id: int):
 
 
 def adicionar_post(title: str, content: str, user_id: int) -> bool:
+    if not Config.DATABASE_ENABLED:
+        return False
     try:
         with conectar() as connection:
             cursor = connection.cursor()
@@ -78,6 +86,8 @@ def adicionar_post(title: str, content: str, user_id: int) -> bool:
 
 
 def atualizar_post(post_id: int, title: str, content: str) -> bool:
+    if not Config.DATABASE_ENABLED:
+        return False
     try:
         with conectar() as connection:
             cursor = connection.cursor()
@@ -93,6 +103,8 @@ def atualizar_post(post_id: int, title: str, content: str) -> bool:
 
 
 def excluir_post(post_id: int) -> bool:
+    if not Config.DATABASE_ENABLED:
+        return False
     try:
         with conectar() as connection:
             cursor = connection.cursor()
@@ -105,6 +117,8 @@ def excluir_post(post_id: int) -> bool:
 
 
 def listar_usuarios():
+    if not Config.DATABASE_ENABLED:
+        return []
     try:
         with conectar() as connection:
             cursor = connection.cursor(dictionary=True)
@@ -119,6 +133,8 @@ def listar_usuarios():
 
 
 def obter_usuario(user_id: int):
+    if not Config.DATABASE_ENABLED:
+        return None
     try:
         with conectar() as connection:
             cursor = connection.cursor(dictionary=True)
@@ -133,6 +149,8 @@ def obter_usuario(user_id: int):
 
 
 def adicionar_usuario(name: str, username: str, password_hash: str, picture: str):
+    if not Config.DATABASE_ENABLED:
+        return False, None
     try:
         with conectar() as connection:
             cursor = connection.cursor()
@@ -149,6 +167,8 @@ def adicionar_usuario(name: str, username: str, password_hash: str, picture: str
 
 
 def verificar_usuario(username: str, password: str):
+    if not Config.DATABASE_ENABLED:
+        return False, None, False
     try:
         with conectar() as connection:
             cursor = connection.cursor(dictionary=True)
@@ -177,6 +197,8 @@ def verificar_usuario(username: str, password: str):
 
 
 def alterar_status(user_id: int) -> bool:
+    if not Config.DATABASE_ENABLED:
+        return False
     try:
         with conectar() as connection:
             cursor = connection.cursor()
@@ -189,6 +211,8 @@ def alterar_status(user_id: int) -> bool:
 
 
 def excluir_usuario(user_id: int) -> bool:
+    if not Config.DATABASE_ENABLED:
+        return False
     try:
         with conectar() as connection:
             cursor = connection.cursor()
@@ -201,6 +225,8 @@ def excluir_usuario(user_id: int) -> bool:
 
 
 def totais():
+    if not Config.DATABASE_ENABLED:
+        return (0,), (0,)
     try:
         with conectar() as connection:
             cursor = connection.cursor()
@@ -219,6 +245,8 @@ def reset_senha(user_id: int) -> bool:
 
 
 def alterar_senha(password_hash: str, user_id: int) -> bool:
+    if not Config.DATABASE_ENABLED:
+        return False
     try:
         with conectar() as connection:
             cursor = connection.cursor()
@@ -231,6 +259,8 @@ def alterar_senha(password_hash: str, user_id: int) -> bool:
 
 
 def editar_perfil(name: str, username: str, picture: str, user_id: int) -> bool:
+    if not Config.DATABASE_ENABLED:
+        return False
     try:
         with conectar() as connection:
             cursor = connection.cursor()

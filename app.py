@@ -69,7 +69,11 @@ app.jinja_env.globals["csrf_token"] = csrf_token
 
 @app.context_processor
 def inject_template_globals():
-    return {"now_year": datetime.now(timezone.utc).year}
+    return {
+        "now_year": datetime.now(timezone.utc).year,
+        "anonymous_mode": app.config["ANONYMOUS_MODE"],
+        "database_enabled": app.config["DATABASE_ENABLED"],
+    }
 
 
 @app.before_request
@@ -111,6 +115,9 @@ def apply_security_and_cache_headers(response: Response) -> Response:
 def user_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
+        if not app.config["AUTH_ENABLED"]:
+            flash("O blog está em modo visitante. Login e alterações estão temporariamente desativados.", "warning")
+            return redirect(url_for("index"))
         if "idUser" not in session or "user" not in session:
             flash("Faça login para continuar.", "warning")
             return redirect(url_for("login"))
@@ -121,6 +128,8 @@ def user_required(view):
 def admin_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
+        if not app.config["AUTH_ENABLED"]:
+            abort(403)
         if not session.get("admin"):
             abort(403)
         return view(*args, **kwargs)
@@ -185,6 +194,8 @@ def editarpost(post_id: int):
 
 @app.post("/excluirpost/<int:post_id>")
 def excluirpost(post_id: int):
+    if not app.config["AUTH_ENABLED"]:
+        abort(403)
     if not session.get("admin") and "idUser" not in session:
         abort(401)
     post = db.obter_post(post_id)
@@ -201,6 +212,10 @@ def excluirpost(post_id: int):
 def login():
     if request.method == "GET":
         return render_template("login.html", page_title="Entrar")
+
+    if not app.config["AUTH_ENABLED"]:
+        flash("Você entrou como visitante. A leitura pública não exige conta.", "success")
+        return redirect(url_for("index"))
 
     username = clean_text(request.form.get("user", ""), max_length=15).lower()
     password = request.form.get("password", "")
@@ -243,6 +258,10 @@ def logout():
 
 @app.route("/sign-up", methods=["GET", "POST"])
 def cadastro():
+    if not app.config["AUTH_ENABLED"]:
+        flash("O cadastro está indisponível no modo visitante. Você pode ler o blog sem criar uma conta.", "warning")
+        return redirect(url_for("index"))
+
     if request.method == "GET":
         return render_template("sign-up.html", page_title="Criar conta")
 
@@ -395,7 +414,11 @@ def robots():
 
 @app.get("/healthz")
 def healthz():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "mode": "anonymous" if app.config["ANONYMOUS_MODE"] else "authenticated",
+        "database": "enabled" if app.config["DATABASE_ENABLED"] else "disabled",
+    }
 
 
 @app.errorhandler(400)

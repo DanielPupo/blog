@@ -32,7 +32,9 @@
         </span>
       </a>
       <nav class="site-nav" aria-label="Navegação principal">
-        {% if session.get('admin') %}
+        {% if anonymous_mode %}
+          <span class="visitor-badge" title="Leitura pública sem conta">Visitante</span>
+        {% elif session.get('admin') %}
           <a href="{{ url_for('dashboard') }}">Painel</a>
         {% elif session.get('user') %}
           <a href="{{ url_for('perfil') }}">Perfil</a>
