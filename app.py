@@ -1,371 +1,422 @@
-from flask import Flask, render_template, request, redirect, flash, session
-from db import *
-import mysql.connector
-import os
-from werkzeug.security import generate_password_hash, check_password_hash
+"""Aplicação principal do Pupo's Blog.
+
+O projeto continua em Flask, mas concentra aqui apenas regras HTTP, sessão e
+validação. O acesso ao MySQL permanece isolado em ``db.py``.
+"""
+
+from __future__ import annotations
+
+import secrets
+import unicodedata
+from datetime import datetime, timezone
+from functools import wraps
+from pathlib import Path
+
+from flask import (
+    Flask,
+    Response,
+    abort,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    session,
+    url_for,
+)
+from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
-from config import *
 
-#Acessar as variáveis de ambiente
-secret_key = SECRET_KEY
-usuario_admin = USUARIO_ADMIN
-senha_admin = SENHA_ADMIN
+import db
+from settings import Config
 
-app = Flask(__name__)
-app.secret_key = SECRET_KEY #CHAVE SECRETA
 
-app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static/uploads')
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)   # cria pasta se não existir
+app = Flask(__name__, static_folder="public/static", static_url_path="/static")
+app.config.from_object(Config)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
-# Rota para a página inicial
-@app.route('/')
+PROJECT_ROOT = Path(__file__).resolve().parent
+BUNDLED_UPLOAD_FOLDER = PROJECT_ROOT / "public" / "static" / "uploads"
+UPLOAD_FOLDER = Path(app.config["UPLOAD_FOLDER"])
+UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+
+ALLOWED_IMAGE_SIGNATURES = {
+    "jpg": lambda data: data.startswith(b"\xff\xd8\xff"),
+    "jpeg": lambda data: data.startswith(b"\xff\xd8\xff"),
+    "png": lambda data: data.startswith(b"\x89PNG\r\n\x1a\n"),
+    "webp": lambda data: data.startswith(b"RIFF") and data[8:12] == b"WEBP",
+}
+
+
+def clean_text(value: str, *, max_length: int) -> str:
+    """Normaliza entrada de texto e impõe o limite aceito pelo banco."""
+    normalized = unicodedata.normalize("NFKC", value or "").strip()
+    return normalized[:max_length]
+
+
+def csrf_token() -> str:
+    """Cria um token por sessão para proteger formulários de terceiros."""
+    token = session.get("_csrf_token")
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session["_csrf_token"] = token
+    return token
+
+
+app.jinja_env.globals["csrf_token"] = csrf_token
+
+
+@app.context_processor
+def inject_template_globals():
+    return {"now_year": datetime.now(timezone.utc).year}
+
+
+@app.before_request
+def protect_mutating_requests():
+    if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+        return None
+    supplied = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token", "")
+    expected = session.get("_csrf_token", "")
+    if not expected or not secrets.compare_digest(expected, supplied):
+        abort(400, description="Token de segurança ausente ou inválido.")
+    return None
+
+
+@app.after_request
+def apply_security_and_cache_headers(response: Response) -> Response:
+    """Aplica defesa em profundidade também fora da infraestrutura da Vercel."""
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; script-src 'self'; style-src 'self'; "
+        "img-src 'self' data:; font-src 'self'; connect-src 'self'; "
+        "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+    )
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    if request.is_secure:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+    if request.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    elif request.endpoint in {"login", "cadastro", "perfil", "dashboard", "novasenha"} or session:
+        response.headers["Cache-Control"] = "no-store"
+    elif request.method == "GET":
+        response.headers["Cache-Control"] = "public, max-age=0, s-maxage=60, stale-while-revalidate=300"
+    return response
+
+
+def user_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if "idUser" not in session or "user" not in session:
+            flash("Faça login para continuar.", "warning")
+            return redirect(url_for("login"))
+        return view(*args, **kwargs)
+    return wrapped
+
+
+def admin_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not session.get("admin"):
+            abort(403)
+        return view(*args, **kwargs)
+    return wrapped
+
+
+@app.get("/")
 def index():
-    postagens = listar_post()
-    return render_template('index.html', posts=postagens)
+    return render_template(
+        "index.html",
+        posts=db.listar_posts(),
+        page_title="Histórias sobre tecnologia e aprendizado",
+        page_description="Artigos e notas de Daniel Pupo sobre desenvolvimento de software.",
+    )
 
-@app.route('/novopost', methods=['GET', 'POST'])
+
+@app.get("/post/<int:post_id>")
+def post_detail(post_id: int):
+    post = db.obter_post(post_id)
+    if not post:
+        abort(404)
+    return render_template(
+        "post_detail.html",
+        post=post,
+        page_title=post["title"],
+        page_description=post["content"][:155],
+    )
+
+
+@app.post("/novopost")
+@user_required
 def novopost():
-    if request.method == 'GET':
-        return redirect('/')
+    title = clean_text(request.form.get("title", ""), max_length=50)
+    content = clean_text(request.form.get("content", ""), max_length=10_000)
+    if not title or not content:
+        flash("Preencha título e conteúdo.", "warning")
+    elif db.adicionar_post(title, content, session["idUser"]):
+        flash("Post publicado.", "success")
     else:
-        title = request.form['title'].strip()
-        content = request.form['content'].strip()
-        idUser = session['idUser']
-        
-        if not title or not content:
-            flash("Preencha todos os campos!")
-            return redirect('/')
-        
-        sucesso = adicionar_post(title, content, idUser)
-        if sucesso:
-            flash("Post adicionado com sucesso!")
-        else:
-            flash("Erro ao adicionar post! Tente novamente.")
+        flash("Não foi possível publicar agora.", "error")
+    return redirect(url_for("index"))
 
-        #Encaminhar para a rota da página inicial
-        return redirect('/')
-    
-#Rota para editar post
-@app.route('/editarpost/<int:idPost>', methods=['GET','POST'])
-def editarpost(idPost):
-    if 'user' not in session or 'admin' in session:
-        return redirect('/')
-    
-    #checar autoria
-    with conectar() as conexao:
-        cursor = conexao.cursor(dictionary=True)
-        cursor.execute(f"SELECT idUser FROM posts WHERE idPost = {idPost}")
-        autor = cursor.fetchone()
-        if not autor or autor['idUser'] != session['idUser']:
-            print("Tentativa de acessar a postagem de outra autoria!")
-            return redirect('/')
-    
+
+@app.route("/editarpost/<int:post_id>", methods=["GET", "POST"])
+@user_required
+def editarpost(post_id: int):
+    post = db.obter_post(post_id)
+    if not post or post["idUser"] != session["idUser"]:
+        abort(403)
     if request.method == "GET":
-        try:
-            with conectar() as conexao:
-                cursor = conexao.cursor(dictionary=True)
-                cursor.execute("SELECT * FROM posts WHERE idPost = %s", (idPost,))
-                post = cursor.fetchone()
-                postagens = listar_post()
-                return render_template('index.html', posts=postagens, post=post)
-        except mysql.connector.Error as erro:
-            print(f"Erro de BD! Erro: {erro}")
-            flash("Houve um erro! Tente mais tarde!")
-            return []
+        return render_template("index.html", posts=db.listar_posts(), post=post)
 
-#Gravar edição do post
-    if request.method == "POST":
-        title = request.form['title'].strip()
-        content = request.form['content'].strip()
-        
-        if not title or not content:
-            flash("Preencha todos os campos!")
-            return redirect(f'/editarpost/{idPost}')
-        
-        sucesso = atualizar_post(idPost, title, content)
-        
-        if sucesso:
-            flash("Post atualizado com sucesso!")
-        else:
-            flash("Erro ao atualizar post! Tente novamente.")
-        return redirect('/')
-    
-#Rota para excluir post       
-@app.route('/excluirpost/<int:idPost>')
-def excluirpost(idPost):
-    if not session:
-        print("Usuário não autorizado acessando rota exluir.")
-        return redirect('/')
-    
-# 1ª verificação: Checar se o usuário é o autor do post
-    try:
-        with conectar() as conexao:
-            cursor = conexao.cursor(dictionary=True)
-            if 'admin' not in session:
-                cursor.execute(f"SELECT idUser FROM posts WHERE idPost = {idPost}")
-                autor_post = cursor.fetchone()
-                
-                if not autor_post or autor_post ['idUser'] != session.get('idUser'):
-                    print("Tentativa de exclusão não autorizada!")
-                    return redirect('/')
-            
-            cursor.execute(f"DELETE FROM posts WHERE idPost = {idPost}")
-            conexao.commit()
-            flash("Post excluído com sucesso!")
-        
-            if 'admin' in session:
-                return redirect ('/dashboard')
-            else:
-                return redirect('/')
-        
-    except mysql.connector.Error as erro:
-        conexao.rollback()
-        print(f"Erro de BD! Erro: {erro}")
-        flash("Houve um erro! Tente mais tarde!")
-        return redirect('/')
+    title = clean_text(request.form.get("title", ""), max_length=50)
+    content = clean_text(request.form.get("content", ""), max_length=10_000)
+    if not title or not content:
+        flash("Preencha título e conteúdo.", "warning")
+        return redirect(url_for("editarpost", post_id=post_id))
+    success = db.atualizar_post(post_id, title, content)
+    flash("Post atualizado." if success else "Falha ao atualizar o post.", "success" if success else "error")
+    return redirect(url_for("index"))
 
-    
-@app.route('/login', methods=['GET', 'POST'])
+
+@app.post("/excluirpost/<int:post_id>")
+def excluirpost(post_id: int):
+    if not session.get("admin") and "idUser" not in session:
+        abort(401)
+    post = db.obter_post(post_id)
+    if not post:
+        abort(404)
+    if not session.get("admin") and post["idUser"] != session["idUser"]:
+        abort(403)
+    success = db.excluir_post(post_id)
+    flash("Post excluído." if success else "Falha ao excluir o post.", "success" if success else "error")
+    return redirect(url_for("dashboard" if session.get("admin") else "index"))
+
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == 'GET':
-        return render_template('login.html')
-    
+    if request.method == "GET":
+        return render_template("login.html", page_title="Entrar")
 
-    elif request.method == 'POST':
-        user = request.form['user'].lower()
-        password = request.form['password']
-        
-        if not user or not password:    
-            flash("Preencha todos os campos!")
-            return redirect('/login')
-        
-        # 1º Primeiro verificamos se o usuário é o ADMIN
-        if user == USUARIO_ADMIN and password == SENHA_ADMIN:
-            session['admin'] = True
-            return redirect('/dashboard')
-        
-        # 2º Verificamos se é um usuário cadastrado
-        valido, usuario_encontrado, precisa_alterar = verificar_usuario(user, password)
-        if valido:
-            if usuario_encontrado['ativo'] == 0:
-                flash("Usuário bloqueado! Fale com o ADM!")
-                return redirect('/login')
+    username = clean_text(request.form.get("user", ""), max_length=15).lower()
+    password = request.form.get("password", "")
+    if not username or not password:
+        flash("Preencha usuário e senha.", "warning")
+        return redirect(url_for("login"))
 
-            # guarda id na sessão (necessário para permitir alteração de senha)
-            session['idUser'] = usuario_encontrado['idUser']
-            session['user'] = usuario_encontrado['user']
-            session['foto'] = usuario_encontrado['picture']
+    admin_hash = app.config.get("ADMIN_PASSWORD_HASH", "")
+    if username == app.config.get("ADMIN_USERNAME") and admin_hash and check_password_hash(admin_hash, password):
+        session.clear()
+        session.permanent = True
+        session["admin"] = True
+        session["_csrf_token"] = secrets.token_urlsafe(32)
+        return redirect(url_for("dashboard"))
 
-            if precisa_alterar:
-                # senha é a padrão -> forçar alteração
-                return render_template('nova_senha.html')
+    valid, found_user, must_change = db.verificar_usuario(username, password)
+    if not valid:
+        flash("Usuário ou senha inválidos.", "error")
+        return redirect(url_for("login"))
+    if not found_user["ativo"]:
+        flash("Usuário bloqueado. Fale com o administrador.", "error")
+        return redirect(url_for("login"))
 
-            # login normal
-            return redirect('/')
-        
-        # 3º Nenhum usuário ou ADMIN foram encontrados
-        flash("Usuário ou senha inválidos!")
-        return redirect('/login')
-    
-#Rota para o dashboard
-@app.route('/dashboard')
-def dashboard():
-    if not session or "admin" not in session:
-            return redirect('/')
-    
-    usuarios = listar_usuarios()
-    posts = listar_post()
-    total_posts, total_usuarios = totais()
-    return render_template('dashboard.html', posts=posts, usuarios=usuarios, total_posts=total_posts, total_usuarios=total_usuarios)
+    session.clear()
+    session.permanent = True
+    session.update(
+        idUser=found_user["idUser"],
+        user=found_user["user"],
+        foto=found_user.get("picture") or "placeholder.svg",
+        _csrf_token=secrets.token_urlsafe(32),
+    )
+    return redirect(url_for("novasenha" if must_change else "index"))
 
-#Rota para logout
-@app.route('/logout')
+
+@app.post("/logout")
 def logout():
     session.clear()
-    return redirect('/')
+    return redirect(url_for("index"))
 
-@app.route('/sign-up', methods=['GET', 'POST'])
+
+@app.route("/sign-up", methods=["GET", "POST"])
 def cadastro():
-    if request.method == 'GET':
-        return render_template('sign-up.html')
-    elif request.method == 'POST':
-        name = request.form['name'].strip()
-        user = request.form['user'].lower().strip()
-        password = request.form['password'].strip()
-        
-        if not name or not user or not password:
-            flash("Preencha todos os campos!")
-            return redirect('/sign-up')
+    if request.method == "GET":
+        return render_template("sign-up.html", page_title="Criar conta")
 
-        senha_hash = generate_password_hash(password)
-        foto = "placeholder.jpg" #foto padrão
-        resultado, erro = adicionar_usuarios (name, user, senha_hash, foto)
-        
-        if resultado:
-            flash("Usuário cadastrado com sucesso! Faça o login.")
-            return redirect('/login')
-        else:
-            if erro.errno == 1062:
-                flash("Esse user já existe! Tente outro.")
-            else: 
-                flash("Erro ao cadastrar! Procure o suporte.")
-            return redirect('/sign-up')
+    name = clean_text(request.form.get("name", ""), max_length=50)
+    username = clean_text(request.form.get("user", ""), max_length=15).lower()
+    password = request.form.get("password", "")
+    if not name or not username or len(password) < 8:
+        flash("Informe nome, usuário e uma senha com pelo menos 8 caracteres.", "warning")
+        return redirect(url_for("cadastro"))
 
-@app.route('/usuario/status/<int:idUser>')
-def status_usuario(idUser):
-    if not session:
-        return redirect ('/')
-    sucesso = alterar_status(idUser)
-    if sucesso:
-        flash('Status alterado com sucesso')
+    created, error = db.adicionar_usuario(name, username, generate_password_hash(password), "placeholder.svg")
+    if created:
+        flash("Conta criada. Agora faça login.", "success")
+        return redirect(url_for("login"))
+    if getattr(error, "errno", None) == 1062:
+        flash("Esse nome de usuário já existe.", "warning")
     else:
-        flash('Erro na alteração do status!')
-    return redirect('/dashboard')
+        flash("Não foi possível criar a conta.", "error")
+    return redirect(url_for("cadastro"))
 
-@app.route('/usuario/excluir/<int:idUser>', methods=['POST'])
-def excluir_usuario(idUser):
-    # somente admin pode excluir
-    if 'admin' not in session:
-        return redirect('/')
-    # impedir admin apagar a si mesmo 
-    if 'admin' in session and session.get('idUser') == idUser:
-        flash("Admin não pode excluir a si mesmo.")
 
-    sucesso = delete_usuario(idUser)
-    if sucesso:
-        flash('Usuário excluído com sucesso')
-    else:
-        flash('Erro na exclusão do usuário!')
-    return redirect('/dashboard')
+@app.get("/dashboard")
+@admin_required
+def dashboard():
+    total_posts, total_users = db.totais()
+    return render_template(
+        "dashboard.html",
+        posts=db.listar_posts(),
+        usuarios=db.listar_usuarios(),
+        total_posts=total_posts,
+        total_usuarios=total_users,
+        page_title="Painel administrativo",
+    )
 
-@app.route('/usuario/reset/<int:idUser>')
-def reset(idUser):
-    if 'admin' not in session:
-        return redirect('/')
-    
-    sucesso = reset_senha(idUser)
-    
-    if sucesso:
-        flash("Senha resetada com sucesso!")
-    else:
-        flash("Falha ao resetar a senha!")
-    return redirect ('/dashboard')
 
-@app.route('/usuario/novasenha', methods=['GET','POST'])
+@app.post("/usuario/status/<int:user_id>")
+@admin_required
+def status_usuario(user_id: int):
+    success = db.alterar_status(user_id)
+    flash("Status atualizado." if success else "Falha ao atualizar o status.", "success" if success else "error")
+    return redirect(url_for("dashboard"))
+
+
+@app.post("/usuario/excluir/<int:user_id>")
+@admin_required
+def excluir_usuario(user_id: int):
+    success = db.excluir_usuario(user_id)
+    flash("Usuário excluído." if success else "Falha ao excluir o usuário.", "success" if success else "error")
+    return redirect(url_for("dashboard"))
+
+
+@app.post("/usuario/reset/<int:user_id>")
+@admin_required
+def reset(user_id: int):
+    success = db.reset_senha(user_id)
+    flash("Senha redefinida." if success else "Falha ao redefinir a senha.", "success" if success else "error")
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/usuario/novasenha", methods=["GET", "POST"])
+@user_required
 def novasenha():
-    if 'idUser' not in session:
-        return redirect('/')
-    
-    if request.method == 'GET':
-        return render_template('nova_senha.html')
-    
-    if request.method == 'POST':
-        senha = request.form['senha']
-        confirmacao = request.form['confirmacao']
-        
-        if not senha or not confirmacao:
-            flash('Preencha corretamente as senhas!')
-            return render_template('nova_senha.html')
-        
-        if senha != confirmacao:
-            flash('As senha não são iguais!')
-            return render_template('nova_senha.html')
-        
-        if senha == '1234':
-            flash('A senha precisa ser alterada!')
-            return render_template('nova_senha.html')
-        
-        senha_hash = generate_password_hash(senha)
-        idUser = session['idUser']
-        sucesso = alterar_senha(senha_hash, idUser)
-        if sucesso:
-            flash('Senha alterada com sucesso!')
-            if 'user' in session:
-                return redirect('/perfil')
-            
-            return redirect('/login')
-        else:
-            flash('Erro no cadastro da nova senha!')
-            return render_template('nova_senha.html')
-        
-@app.route('/perfil', methods=['GET','POST'])
-def perfil():
-    if 'idUser' not in session:
-        return redirect('/')
+    if request.method == "GET":
+        return render_template("nova_senha.html", page_title="Alterar senha")
 
-    if request.method == 'GET':
-        usuarios = listar_usuarios()
-        usuario = next((u for u in usuarios if u['idUser'] == session['idUser']), None)
-
-        if not usuario:
-            flash("Usuário não encontrado!")
-            return redirect('/')
-
-        return render_template(
-            'profile.html',
-            nome=usuario['name'],
-            user=usuario['user'],
-            foto=usuario['picture']
-        )
-
-    # POST (atualizar)
-    name = request.form['name'].strip()
-    user = request.form['user'].strip()
-    foto = request.files.get('foto')
-    idUser = session['idUser']
-
-    if not name or not user:
-        flash("Os campos Nome e User não podem estar vazios.")
-        return redirect('/perfil')
-
-    # --- pegar foto atual ---
-    usuarios = listar_usuarios()
-    usuario = next((u for u in usuarios if u['idUser'] == idUser), None)
-    nome_atual = usuario['picture'] if usuario else "placeholder.jpg"
-
-    nome_foto = nome_atual
-
-    # --- se enviou nova foto ---
-    if foto and foto.filename:
-        filename = secure_filename(foto.filename)
-        ext = filename.rsplit('.', 1)[-1].lower()
-
-        if ext not in ('png','jpg','webp'):
-            flash("Extensão inválida!")
-            return redirect('/perfil')
-
-        foto.seek(0)
-        if len(foto.read()) > 2 * 1024 * 1024:
-            flash("Arquivo acima de 2MB não é aceito!")
-            return redirect('/perfil')
-
-        foto.seek(0)
-        nome_foto = f"{idUser}.{ext}"
-
-    sucesso = editar_perfil(name, user, nome_foto, idUser)
-
-    if sucesso:
-        if foto and foto.filename:
-            caminho_completo = os.path.join(app.config['UPLOAD_FOLDER'], nome_foto)
-            foto.save(caminho_completo)
-            session['foto'] = nome_foto
-            print(f"Foto salva em: {caminho_completo}")
-        flash("Dados alterados com sucesso!")
+    password = request.form.get("senha", "")
+    confirmation = request.form.get("confirmacao", "")
+    if password != confirmation:
+        flash("As senhas não coincidem.", "error")
+    elif len(password) < 8 or password == "1234":
+        flash("Use uma senha diferente da padrão e com pelo menos 8 caracteres.", "warning")
+    elif db.alterar_senha(generate_password_hash(password), session["idUser"]):
+        flash("Senha alterada.", "success")
+        return redirect(url_for("perfil"))
     else:
-        flash("Erro ao atualizar dados!")
+        flash("Não foi possível alterar a senha.", "error")
+    return render_template("nova_senha.html", page_title="Alterar senha")
 
-    return redirect('/perfil')
 
-#ERRO 404
+def detect_image_extension(upload) -> str | None:
+    filename = secure_filename(upload.filename or "")
+    extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    header = upload.stream.read(16)
+    upload.stream.seek(0)
+    validator = ALLOWED_IMAGE_SIGNATURES.get(extension)
+    if not validator or not validator(header):
+        return None
+    return "jpg" if extension == "jpeg" else extension
+
+
+@app.route("/perfil", methods=["GET", "POST"])
+@user_required
+def perfil():
+    user = db.obter_usuario(session["idUser"])
+    if not user:
+        abort(404)
+    if request.method == "GET":
+        return render_template("profile.html", usuario=user, page_title="Meu perfil")
+
+    name = clean_text(request.form.get("name", ""), max_length=50)
+    username = clean_text(request.form.get("user", ""), max_length=15).lower()
+    upload = request.files.get("foto")
+    picture = user.get("picture") or "placeholder.svg"
+    if not name or not username:
+        flash("Nome e usuário são obrigatórios.", "warning")
+        return redirect(url_for("perfil"))
+
+    pending_upload = None
+    if upload and upload.filename:
+        if not app.config["ENABLE_LOCAL_UPLOADS"]:
+            flash("Uploads precisam de armazenamento externo na Vercel. Os demais dados foram salvos.", "warning")
+        else:
+            extension = detect_image_extension(upload)
+            if not extension:
+                flash("Envie uma imagem JPG, PNG ou WebP válida.", "error")
+                return redirect(url_for("perfil"))
+            picture = f"{session['idUser']}.{extension}"
+            pending_upload = upload
+
+    if not db.editar_perfil(name, username, picture, session["idUser"]):
+        flash("Não foi possível salvar o perfil.", "error")
+        return redirect(url_for("perfil"))
+    if pending_upload:
+        pending_upload.save(UPLOAD_FOLDER / picture)
+    session.update(user=username, foto=picture)
+    flash("Perfil atualizado.", "success")
+    return redirect(url_for("perfil"))
+
+
+@app.get("/uploads/<path:filename>")
+def profile_image(filename: str):
+    safe_name = secure_filename(filename)
+    if not safe_name or safe_name != filename:
+        abort(404)
+    requested = UPLOAD_FOLDER / safe_name
+    if requested.is_file():
+        return send_from_directory(UPLOAD_FOLDER, safe_name, max_age=86_400)
+    return send_from_directory(BUNDLED_UPLOAD_FOLDER, "placeholder.svg", max_age=86_400)
+
+
+@app.get("/sitemap.xml")
+def sitemap():
+    return Response(render_template("sitemap.xml", posts=db.listar_posts()), mimetype="application/xml")
+
+
+@app.get("/robots.txt")
+def robots():
+    return Response(render_template("robots.txt"), mimetype="text/plain")
+
+
+@app.get("/healthz")
+def healthz():
+    return {"status": "ok"}
+
+
+@app.errorhandler(400)
+def bad_request(error):
+    return render_template("error.html", code=400, title="Requisição inválida", message=error.description), 400
+
+
+@app.errorhandler(403)
+def forbidden(_error):
+    return render_template("error.html", code=403, title="Acesso negado", message="Você não pode acessar esta página."), 403
+
+
 @app.errorhandler(404)
-def page_not_found(error):
-    return render_template('e404.html'), 404
+def page_not_found(_error):
+    return render_template("error.html", code=404, title="Página não encontrada", message="O endereço pode ter mudado."), 404
 
-#ERRO 500 
+
 @app.errorhandler(500)
-def erro_interno(error):
-    return render_template('e500.html')
+def internal_error(_error):
+    return render_template("error.html", code=500, title="Erro interno", message="Tente novamente em alguns instantes."), 500
 
-# SEMPRE NO FINAL DO ARQUIVO
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=app.config["DEBUG"])

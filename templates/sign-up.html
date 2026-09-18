@@ -1,20 +1,23 @@
 {% extends 'base.html' %}
 {% block conteudo %}
-
-<div class="auth-container">
-  <form class="auth-card" action="/sign-up" method="POST">
-      <h2>Criar Conta</h2>
-
-      {% with msg = get_flashed_messages()|first %}
-          {% if msg %}<p class="mensagem">{{ msg }}</p>{% endif %}
-      {% endwith %}
-
-      <input type="text" name="user" placeholder="Usuário" autocomplete="off" required>
-      <input type="text" name="name" placeholder="Nome Completo" autocomplete="off" required>
-      <input type="password" name="password" placeholder="Senha" required>
-      <button type="submit">Registrar</button>
-      <p>Já tem conta? <a href="/login">Entrar</a></p>
+<section class="auth-layout shell">
+  <div class="auth-intro">
+    <p class="eyebrow">NOVO POR AQUI?</p>
+    <h1>Crie seu espaço para escrever.</h1>
+    <p>Uma conta simples, seus textos e uma experiência feita para leitura.</p>
+  </div>
+  <form class="auth-card" action="{{ url_for('cadastro') }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h2>Criar conta</h2>
+    <label for="name">Nome</label>
+    <input id="name" type="text" name="name" maxlength="50" autocomplete="name" required>
+    <label for="user">Usuário</label>
+    <input id="user" type="text" name="user" maxlength="15" autocomplete="username" required>
+    <label for="password">Senha</label>
+    <input id="password" type="password" name="password" minlength="8" autocomplete="new-password" required>
+    <small>Use pelo menos 8 caracteres.</small>
+    <button class="button button-primary" type="submit">Criar conta</button>
+    <p>Já tem uma conta? <a href="{{ url_for('login') }}">Entrar</a></p>
   </form>
-</div>
-
+</section>
 {% endblock %}

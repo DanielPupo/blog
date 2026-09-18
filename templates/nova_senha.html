@@ -1,28 +1,15 @@
 {% extends 'base.html' %}
 {% block conteudo %}
-
-<div class="nova-senha-container">
-    <div class="nova-senha-card">
-        <h2>Altere a sua senha</h2>
-        <p>É obrigatório alterar a senha padrão!</p>
-
-        {% with msg = get_flashed_messages()|first %}
-            {% if msg %}<div class="msg error">{{ msg }}</div>{% endif %}
-        {% endwith %}
-
-        <form action="/usuario/novasenha" method="POST">
-            <label>Nova senha:</label>
-            <input type="password" name="senha" required>
-            <label>Confirme a nova senha:</label>
-            <input type="password" name="confirmacao" required>
-
-            <div style="display:flex; gap:10px; margin-top:8px;">
-                <button type="submit">Cadastrar nova senha</button>
-                <a href="/"><button type="button">Cancelar</button></a>
-            </div>
-        </form>
-    </div>
-</div>
-
+<section class="auth-layout shell auth-layout-single">
+  <form class="auth-card" action="{{ url_for('novasenha') }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p class="eyebrow">SEGURANÇA</p>
+    <h1>Alterar senha</h1>
+    <label for="senha">Nova senha</label>
+    <input id="senha" type="password" name="senha" minlength="8" autocomplete="new-password" required>
+    <label for="confirmacao">Confirmar nova senha</label>
+    <input id="confirmacao" type="password" name="confirmacao" minlength="8" autocomplete="new-password" required>
+    <button class="button button-primary" type="submit">Atualizar senha</button>
+  </form>
+</section>
 {% endblock %}
-

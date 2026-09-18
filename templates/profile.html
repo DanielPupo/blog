@@ -1,26 +1,26 @@
 {% extends 'base.html' %}
 {% block conteudo %}
-
-<div class="perfil">
-    <img src="../static/uploads/{{ session['foto']}}" class="foto-perfil" alt="Foto do perfil">
-    <h2>Olá, {{nome}}!</h2>
-    <hr>
-    <h3>Alterar dados: </h3>
-
-    <form action="/perfil" method="POST" enctype="multipart/form-data">
-        <label>Nome do usuário:</label>
-        <input type="text" name="name" value="{{nome}}" required>
-        <label>User:</label>
-        <input type="text" name="user" value="{{user}}" required>
-        <label></label>
-        <input type="file" name="foto" accept=".jpg .png .webp">
-
-        <div class="acoes">
-            <a href="/usuario/novasenha" class="btn-secondary">Alterar senha</a>
-            <button type="submit" class="btn-primary">Salvar alterações</button>
-            <a href="/" class="btn-secondary">Voltar aos posts</a>
-        </div>
-    </form>
-</div>
-
+<section class="profile-layout shell">
+  <aside class="profile-summary">
+    <img src="{{ url_for('profile_image', filename=usuario.picture or 'placeholder.svg') }}" alt="Foto de perfil de {{ usuario.name }}" width="160" height="160">
+    <p class="eyebrow">SEU PERFIL</p>
+    <h1>{{ usuario.name }}</h1>
+    <p>@{{ usuario.user }}</p>
+  </aside>
+  <form class="panel-form" action="{{ url_for('perfil') }}" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h2>Dados públicos</h2>
+    <label for="name">Nome</label>
+    <input id="name" type="text" name="name" value="{{ usuario.name }}" maxlength="50" required>
+    <label for="user">Usuário</label>
+    <input id="user" type="text" name="user" value="{{ usuario.user }}" maxlength="15" required>
+    <label for="foto">Foto de perfil</label>
+    <input id="foto" type="file" name="foto" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+    <small>JPG, PNG ou WebP, até 3 MB. Na Vercel, conecte um armazenamento externo.</small>
+    <div class="form-actions">
+      <button class="button button-primary" type="submit">Salvar</button>
+      <a class="button button-secondary" href="{{ url_for('novasenha') }}">Alterar senha</a>
+    </div>
+  </form>
+</section>
 {% endblock %}

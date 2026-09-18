@@ -1,117 +1,46 @@
-# Blog PBE
+# Pupo's Blog — versão refatorada
 
-Bem-vindo ao projeto **Blog PBE**!
+Blog editorial em Flask e MySQL, preparado para execução local e deploy na Vercel.
 
-Este é um sistema de blog desenvolvido em Python utilizando o framework Flask, com autenticação de usuários, painel administrativo, upload de imagens e gerenciamento de postagens. O projeto foi desenvolvido por Daniel Pupo.
+Repositório: `https://github.com/DanielPupo/blog`
 
-## Deploy e Repositório
-
-- **GitHub do Projeto:** [https://github.com/danielpupo/blog-pbe](https://github.com/danielpupo/blog-pbe)
-- **Vercel do Projeto:** [https://blog-pbe-danielpupo.vercel.app](https://blog-pbe-danielpupo.vercel.app)
-
-Para clonar o projeto:
 ```bash
-git clone https://github.com/danielpupo/blog-pbe.git
+git clone https://github.com/DanielPupo/blog.git
 ```
 
-## Índice
-- [Sobre o Projeto](#sobre-o-projeto)
-- [Funcionalidades](#funcionalidades)
-- [Tecnologias Utilizadas](#tecnologias-utilizadas)
-- [Instalação](#instalação)
-- [Configuração](#configuração)
-- [Como Usar](#como-usar)
-- [Estrutura de Pastas](#estrutura-de-pastas)
-- [Créditos](#créditos)
+## Rodar localmente
 
----
+1. Crie e ative um ambiente virtual Python 3.13.
+2. Instale as dependências: `pip install -r requirements.txt`.
+3. Copie `.env.example` para `.env` e preencha os valores. O Flask não carrega `.env` sozinho; exporte as variáveis no terminal ou instale `python-dotenv` apenas no ambiente local.
+4. Crie o banco com `scriptBD.sql`.
+5. Execute `flask --app app run --debug`.
 
-## Sobre o Projeto
-O Blog PBE é uma aplicação web para publicação de postagens, com autenticação de usuários, painel administrativo, upload de fotos de perfil e gerenciamento de posts. O sistema permite que usuários criem contas, façam login, publiquem, editem e excluam postagens, além de alterar informações do perfil e redefinir senhas.
+Para testar: `python -m unittest discover -s tests -v`.
 
-## Funcionalidades
-- Cadastro e login de usuários
-- Autenticação de administrador
-- Publicação, edição e exclusão de postagens
-- Upload de imagem de perfil
-- Painel administrativo com visão geral de usuários e posts
-- Reset e alteração de senha
-- Mensagens de feedback para ações do usuário
-- Tratamento de erros 404 e 500
+## Deploy na Vercel
 
-## Tecnologias Utilizadas
-- **Python 3.x**
-- **Flask**
-- **MySQL** (banco de dados)
-- **Werkzeug** (hash de senha e upload seguro)
-- **HTML5, CSS3** (templates e estilos)
+1. Importe este diretório/repositório no painel da Vercel.
+2. Não configure Build Command nem Output Directory; a Vercel detecta `app.py`.
+3. Cadastre todas as chaves de `.env.example` em **Settings → Environment Variables**.
+4. Use um MySQL externo acessível por TLS e permita conexões da aplicação.
+5. Após o deploy, teste `/healthz`, `/sitemap.xml`, login e uma leitura de artigo.
 
-## Instalação
-1. Clone este repositório:
-   ```bash
-   git clone <url-do-repositorio>
-   ```
-2. Instale as dependências necessárias:
-   ```bash
-   pip install flask mysql-connector-python werkzeug
-   ```
-3. Configure o banco de dados MySQL utilizando o script `scriptBD.sql`.
-4. Configure as variáveis de ambiente em `config.py`:
-   - `SECRET_KEY`
-   - `USUARIO_ADMIN`
-   - `SENHA_ADMIN`
-   - Dados de conexão do banco
+Arquivos estáticos ficam em `public/static`, o diretório recomendado pela Vercel. O Flask usa o mesmo diretório localmente, mantendo as URLs em `/static/...`.
 
-## Configuração
-- Certifique-se de que o banco de dados está rodando e as credenciais estão corretas em `config.py`.
-- O diretório `static/uploads` será criado automaticamente para armazenar as imagens de perfil.
+## Uploads na Vercel
 
-## Como Usar
-1. Execute o arquivo principal:
-   ```bash
-   python app.py
-   ```
-2. Acesse o sistema pelo navegador em `http://localhost:5000`
-3. Cadastre-se ou faça login como administrador para acessar o painel.
+O sistema desativa uploads locais quando `VERCEL` está presente, porque o filesystem de uma Function não é armazenamento persistente. Para produção, conecte Vercel Blob, Cloudinary, S3 ou serviço equivalente e grave apenas a URL no campo `picture`. A edição de nome e usuário continua funcionando.
 
-## Estrutura de Pastas
-```
-app.py
-config.py
-db.py
-scriptBD.sql
-teste.py
-static/
-    style.css
-    img/
-        Nova pasta/
-    uploads/
-        images.jfif
-templates/
-    base.html
-    dashboard.html
-    e404.html
-    e500.html
-    index.html
-    login.html
-    nova_senha.html
-    profile.html
-    sign-up.html
-```
+## Segurança
 
-- **app.py**: Arquivo principal da aplicação Flask
-- **config.py**: Configurações e variáveis de ambiente
-- **db.py**: Funções de acesso ao banco de dados
-- **scriptBD.sql**: Script para criação das tabelas no MySQL
-- **static/**: Arquivos estáticos (CSS, imagens, uploads)
-- **templates/**: Templates HTML do sistema
+- formulários protegidos por token CSRF;
+- ações destrutivas apenas com `POST`;
+- consultas SQL parametrizadas;
+- saída HTML escapada automaticamente pelo Jinja;
+- conteúdo dos posts tratado como texto, sem `safe` e sem HTML/Markdown arbitrário;
+- headers CSP, frame, MIME, referrer e permissions;
+- senha administrativa armazenada apenas como hash em variável de ambiente;
+- cookies `HttpOnly`, `SameSite=Lax` e `Secure` na Vercel.
 
-## Créditos
-Desenvolvido por **Daniel Pupo**
-
-- [GitHub: danielpupo](https://github.com/danielpupo)
-- [Vercel: blog-pbe-danielpupo.vercel.app](https://blog-pbe-danielpupo.vercel.app)
-
----
-
-Sinta-se à vontade para contribuir ou sugerir melhorias!
+Leia `AUDITORIA_E_GUIA.md` para entender e personalizar cada etapa.

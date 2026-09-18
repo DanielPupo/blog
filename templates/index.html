@@ -1,67 +1,76 @@
 {% extends 'base.html' %}
 {% block conteudo %}
+<section class="hero shell" aria-labelledby="hero-title">
+  <p class="eyebrow">DESENVOLVIMENTO · PRODUTO · APRENDIZADO</p>
+  <h1 id="hero-title">Ideias práticas para construir software melhor.</h1>
+  <p class="hero-copy">Anotações de campo sobre código, decisões de produto e tudo que existe entre uma ideia e algo útil no mundo.</p>
+</section>
 
-    <div class="start">
-        <div class="col-left"></div>
-
-        <div class="col-centro">
-            {% if 'user' in session %}
-            <div class="form-post">
-                <form action="{{ '/editarpost/' + post.idPost|string if post else '/novopost' }}" method="POST">
-                    <p>Olá, {{session['user']}}! O que gostaria de postar hoje?</p>
-
-                    <!-- imagem pequena do perfil + inputs -->
-                    <div class="post-input">
-                        <img src="../static/uploads/{{ session['foto']}}" 
-                             alt="Foto do usuário" class="foto-usuario">
-                        <div style="flex:1">
-                            <input type="text" name="title" placeholder="Título do Post" value="{{ post.title if post else ''}}" required maxlength="50">
-                            <textarea name="content" placeholder="Escreva aqui..." required>{{ post.content if post else ''}}</textarea>
-                            <button type="submit">{{ 'Salvar' if post else 'Postar' }}</button>
-                        </div>
-                    </div>
-
-                {%  with msg = get_flashed_messages()|first %}
-                    {% if msg %}
-                    <p class="mensagem">{{ msg }}</p>
-                    {% endif %}
-                {% endwith %}
-                </form>
-            </div>
-            {% endif %}
-
-            <div class="feed">
-                {% if not posts %}
-                    <p>Ainda não temos posts! Volte mais tarde!👋</p>
-                    <p>Ou seja o primeiro a comentar!</p>
-                {% else %}
-                    {% for post in posts %}
-                        <div class="post">
-                            <div class="post-header" style="display: flex; align-items: center; gap: 10px;">
-                                <img src="../static/uploads/{{ post.picture }}" alt="Usuário" style="width:32px; height:32px; border-radius:50%;">
-                                <p><strong>{{post.user}}</strong> disse:</p>
-                                <p style="margin-left:auto; font-size:0.9em;">{{ post.datePost.strftime("%d/%m/%y às %H:%M") }}</p>
-                            </div>
-                            <div class="post-content">
-                                <h2>{{post.title}}</h2>
-                                <p>{{post.content}}</p>
-                            </div>
-                            {% if post.idUser == session.get('idUser') or 'admin' in session%}
-                            <div class="post-button">
-                                {% if 'user' in session %}
-                                <a href="/editarpost/{{ post.idPost }}">Editar</a>
-                                {% endif %}
-                                <a href="/excluirpost/{{ post.idPost }}" onclick="return confirm('Confirma a exclusão?')">Excluir</a>
-                            </div>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            </div>
-
-        </div>
-
-        <div class="col-right"></div>
+{% if session.get('user') %}
+<section class="shell composer" aria-labelledby="composer-title">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">ÁREA DO AUTOR</p>
+      <h2 id="composer-title">{{ 'Editar publicação' if post else 'Nova publicação' }}</h2>
     </div>
+  </div>
+  <form action="{{ url_for('editarpost', post_id=post.idPost) if post else url_for('novopost') }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="title">Título</label>
+    <input id="title" type="text" name="title" value="{{ post.title if post else '' }}" maxlength="50" required>
+    <label for="content">Conteúdo</label>
+    <textarea id="content" name="content" maxlength="10000" rows="8" required>{{ post.content if post else '' }}</textarea>
+    <div class="form-actions">
+      <button class="button button-primary" type="submit">{{ 'Salvar alterações' if post else 'Publicar' }}</button>
+      {% if post %}<a class="button button-secondary" href="{{ url_for('index') }}">Cancelar</a>{% endif %}
+    </div>
+  </form>
+</section>
+{% endif %}
 
+<section class="shell latest" aria-labelledby="latest-title">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">PUBLICAÇÕES RECENTES</p>
+      <h2 id="latest-title">Últimas histórias</h2>
+    </div>
+    <span>{{ posts|length }} {{ 'texto' if posts|length == 1 else 'textos' }}</span>
+  </div>
+
+  {% if posts %}
+    <div class="post-grid">
+      {% for post in posts %}
+      <article class="post-card">
+        <div class="post-meta">
+          <img src="{{ url_for('profile_image', filename=post.picture or 'placeholder.svg') }}" alt="" width="40" height="40">
+          <div>
+            <strong>@{{ post.user }}</strong>
+            <time datetime="{{ post.datePost.isoformat() }}">{{ post.datePost.strftime('%d.%m.%Y') }}</time>
+          </div>
+        </div>
+        <h3><a href="{{ url_for('post_detail', post_id=post.idPost) }}">{{ post.title }}</a></h3>
+        <p>{{ post.content|truncate(210, true, '…') }}</p>
+        <div class="post-card-footer">
+          <a class="read-link" href="{{ url_for('post_detail', post_id=post.idPost) }}">Ler artigo <span aria-hidden="true">→</span></a>
+          {% if post.idUser == session.get('idUser') or session.get('admin') %}
+          <div class="post-actions">
+            {% if session.get('user') %}<a href="{{ url_for('editarpost', post_id=post.idPost) }}">Editar</a>{% endif %}
+            <form action="{{ url_for('excluirpost', post_id=post.idPost) }}" method="post" data-confirm="Excluir este post?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit">Excluir</button>
+            </form>
+          </div>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p class="eyebrow">PÁGINA EM BRANCO, POR ENQUANTO</p>
+      <h3>A primeira boa história começa com uma linha.</h3>
+      <p>Entre na sua conta e publique o primeiro texto do blog.</p>
+    </div>
+  {% endif %}
+</section>
 {% endblock %}

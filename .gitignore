@@ -1,2 +1,15 @@
+.env
+.env.*
+!.env.example
 config.py
-
+config.local.py
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.vercel/
+# Cópia local legada; os assets versionados agora ficam em public/static.
+/static/
+public/static/uploads/*
+!public/static/uploads/placeholder.svg

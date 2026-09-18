@@ -1,19 +1,20 @@
 {% extends 'base.html' %}
 {% block conteudo %}
-
-<div class="auth-container">
-  <form class="auth-card" action="/login" method="POST">
-      <h2>Login no Blog</h2>
-
-      {% with msg = get_flashed_messages()|first %}
-          {% if msg %}<p class="mensagem">{{ msg }}</p>{% endif %}
-      {% endwith %}
-
-      <input type="text" name="user" placeholder="Usuário" required autocomplete="off"> 
-      <input type="password" name="password" placeholder="Senha" required>
-      <button type="submit">Entrar</button>
-      <p>Não tem uma conta? <a href="/sign-up">Cadastre-se</a></p>
+<section class="auth-layout shell">
+  <div class="auth-intro">
+    <p class="eyebrow">BEM-VINDO DE VOLTA</p>
+    <h1>Continue a conversa.</h1>
+    <p>Entre para publicar, editar seus textos e manter seu perfil.</p>
+  </div>
+  <form class="auth-card" action="{{ url_for('login') }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h2>Entrar</h2>
+    <label for="user">Usuário</label>
+    <input id="user" type="text" name="user" maxlength="15" autocomplete="username" required autofocus>
+    <label for="password">Senha</label>
+    <input id="password" type="password" name="password" autocomplete="current-password" required>
+    <button class="button button-primary" type="submit">Entrar</button>
+    <p>Ainda não tem conta? <a href="{{ url_for('cadastro') }}">Criar conta</a></p>
   </form>
-</div>
-
+</section>
 {% endblock %}
